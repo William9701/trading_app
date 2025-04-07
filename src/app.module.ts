@@ -9,12 +9,14 @@ import { AuthMiddleware } from './auth/auth.middleware';
 import * as cookieParser from 'cookie-parser';
 import { ConfigModule } from '@nestjs/config';
 import { RedisService } from './redis/redis.service';
+import { User } from './entities/user.entity';
 import { RedisModule } from './redis/redis.module';
 import { UserSessionModule } from './session/Usersession.module'; // ✅ Ensure this is imported
-
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
+    WalletModule,
     UserSessionModule,
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
@@ -27,6 +29,7 @@ import { UserSessionModule } from './session/Usersession.module'; // ✅ Ensure 
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV !== 'production',  // Set to false in production
     }),
+    TypeOrmModule.forFeature([User]), 
     UserModule,
     
     
@@ -37,6 +40,6 @@ import { UserSessionModule } from './session/Usersession.module'; // ✅ Ensure 
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply the AuthMiddleware to the user routes
-    consumer.apply(cookieParser(), AuthMiddleware).forRoutes('api/users');
+    consumer.apply(cookieParser(), AuthMiddleware).forRoutes('api/users', 'wallet/', 'wallet/fund');
   }
 }

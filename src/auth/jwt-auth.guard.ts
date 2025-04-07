@@ -12,18 +12,16 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     let authHeader = request.headers.authorization;
-    let token: string | null = null;
+    let token: string 
 
     if (authHeader) {
       token = authHeader.split(' ')[1];
-    } else if (request.params.id) {
-      // If no token in headers, check Redis for stored token
-      token = await this.redisService.get(`user:${request.params.id}:token`);
+    } else  {
+      // If no token in headers
+      throw new UnauthorizedException('You have to be logged in to access this ')
     }
 
-    if (!token) {
-      throw new UnauthorizedException('You have to be logged in to access this resource');
-    }
+    
 
     try {
       const decoded = this.jwtService.verify(token);

@@ -16,6 +16,11 @@ export class EmailConsumer implements OnModuleInit {
       await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait for RabbitMQService
       await this.rabbitMQService.consumeQueue(async (msg) => {
         const { type, email, recipientName, otpCode } = JSON.parse(msg.content.toString());
+        if (!type || !email) {
+          this.logger.warn(`Invalid message format: ${msg.content.toString()}`);
+          this.rabbitMQService.nackMessage(msg); // Don't requeue!
+          return;
+        }
         this.logger.log(`Received message for email: ${email} with type: ${type}`);
 
         let retryCount = 0;

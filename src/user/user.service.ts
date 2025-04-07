@@ -10,7 +10,7 @@ import { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserRepository } from './user.repository'; // Adjust the import path as necessary
-import { User } from '../entities/user.entity'; // Adjust the import path as necessary
+import { User } from '../entities/user.entity'; 
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '../mail/mail.service';
@@ -23,7 +23,8 @@ import { UserSession } from '../entities/session.entity'; // Import UserSession 
 import { v4 as uuidv4 } from 'uuid';
 import { randomInt } from 'crypto'; // Import randomInt for OTP generation
 
-import { UserSessionRepository } from '../session/userSession.repository'; // Adjust the import path as necessary
+import { UserSessionRepository } from '../session/userSession.repository';
+import { WalletService } from '../wallet/wallet.service'; // Import WalletService
 
 @Injectable()
 export class UserService {
@@ -31,6 +32,7 @@ export class UserService {
         @InjectRepository(User) private readonly userRepository: Repository<User>,
         private readonly userSessionRepository: UserSessionRepository, // NO @InjectRepository here
         private readonly jwtService: JwtService,
+        private readonly walletService: WalletService,
         private readonly emailService: EmailService,
         private readonly rabbitMQService: RabbitMQService,
         private readonly monitoringService: MonitoringService,
@@ -117,7 +119,7 @@ export class UserService {
 
   private async sendWelcomeEmail(email: string): Promise<void> {
     try {
-      await this.rabbitMQService.sendToQueue(JSON.stringify({ email }));
+      await this.rabbitMQService.sendToQueue(JSON.stringify({ type: 'welcome', email }));
     } catch (error) {
       logger.error(`Failed to send welcome email to ${email}`, error.message);
     }
@@ -137,6 +139,11 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.isVerified) {
+      logger.warn(`User not verified for ${email}`);
+      throw new UnauthorizedException('User not verified');
+    }
+    
     const token = this.jwtService.sign({ id: user.id, email: user.email });
     const sessionId = uuidv4();
 
@@ -154,6 +161,7 @@ export class UserService {
       logger.error(
         `Error storing session in UserSession table for ${email}: ${error.message}`,
       );
+      logger.error(`Error storing session in UserSession table for ${email}`, error);
       throw new InternalServerErrorException('Error storing session');
     }
 
@@ -201,6 +209,8 @@ export class UserService {
     user.isVerified = true;
     await this.userRepository.save(user);
     logger.info(`OTP verified for ${email}`);
+    await this.walletService.createWalletForUser(user);
+    logger.info(`Wallet created for user ${email}`);
     // this.monitoringService.increaseOtpVerificationCount(); // Increment OTP verification metric
     this.sendWelcomeEmail(email); // Send welcome email after successful OTP verification
     logger.info(`Welcome email sent to ${email}`);

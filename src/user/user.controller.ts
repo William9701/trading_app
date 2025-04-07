@@ -20,16 +20,7 @@ export class UserProfileController {
     return this.userService.getUser(id);
   }
 
-  @Get('logout')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Logout user' })
-  @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'User logged out successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async logout(@Req() req, @Res() res: Response) {
-    const sessionId = req.cookies.session_id;
-    return this.userService.logout(sessionId, res);
-  }
+  
 }
 
 @ApiTags('Authentication') 
@@ -70,4 +61,14 @@ export class UserController {
   async login(@Body() loginDto: LoginDto, @Res() res: Response) {
     return this.userService.login(loginDto.email, loginDto.password, res);
   }
+
+  @Get('logout')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'User logged out successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@Req() req, @Res() res: Response) {
+    const sessionId = req.cookies.session_id;
+    return this.userService.logout(sessionId, res);
+  }
+
 }
