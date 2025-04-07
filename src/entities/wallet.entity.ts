@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { WalletBalance } from './wallet-balance.entity';
 import { User } from './user.entity';
+import { Transaction } from './transaction.entity';
 
 @Entity()
 export class Wallet {
@@ -33,4 +34,7 @@ export class Wallet {
     cascade: true,
   })
   balances: WalletBalance[];
+
+  @OneToMany(() => Transaction, transaction => transaction.wallet)
+  transactions: Transaction[];
 }

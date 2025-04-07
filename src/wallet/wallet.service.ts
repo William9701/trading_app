@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { Wallet } from '../entities/wallet.entity';
 import { WalletBalance } from '../entities/wallet-balance.entity';
 import { User } from '../entities/user.entity';
+import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
 
 @Injectable()
 export class WalletService {
   constructor(
     @InjectRepository(Wallet) private walletRepo: Repository<Wallet>,
     @InjectRepository(WalletBalance) private balanceRepo: Repository<WalletBalance>,
+    @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>
+
   ) {}
 
   /**
@@ -89,6 +92,19 @@ export class WalletService {
   
     // Add properly and fix to 2 decimal places if needed
     balance.amount = Number((currentAmount + amount).toFixed(2));
+
+    const transaction = this.transactionRepo.create({
+        wallet,
+        currency,
+        amount,
+        rate: null, // Not needed for funding
+        type: TransactionType.FUNDING,
+        status: TransactionStatus.SUCCESS,
+        reference: `FUND-${Date.now()}`, // Optional unique ID
+        remarks: `Funded ${amount} ${currency}`,
+      });
+      await this.transactionRepo.save(transaction);
+      
   
     return this.balanceRepo.save(balance);
   }
