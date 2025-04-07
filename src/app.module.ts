@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, RequestMethod } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { EmailService } from './mail/mail.service';
@@ -13,10 +13,11 @@ import { User } from './entities/user.entity';
 import { RedisModule } from './redis/redis.module';
 import { UserSessionModule } from './session/Usersession.module'; // ✅ Ensure this is imported
 import { WalletModule } from './wallet/wallet.module';
-
+import { FxModule } from './fx/fx-rate.module';
 @Module({
   imports: [
     WalletModule,
+    FxModule,
     UserSessionModule,
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
@@ -40,6 +41,12 @@ import { WalletModule } from './wallet/wallet.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply the AuthMiddleware to the user routes
-    consumer.apply(cookieParser(), AuthMiddleware).forRoutes('api/users', 'wallet/', 'wallet/fund');
+    consumer.apply(cookieParser(), AuthMiddleware).forRoutes(
+      { path: 'api/users', method: RequestMethod.ALL },
+      { path: 'fx/rates', method: RequestMethod.ALL },
+      { path: 'wallet', method: RequestMethod.ALL },
+      { path: 'transactions', method: RequestMethod.ALL },
+      { path: 'wallet/(.*)', method: RequestMethod.ALL }
+    );
   }
 }

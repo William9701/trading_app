@@ -4,11 +4,11 @@ import { Wallet } from '../entities/wallet.entity';
 import { WalletBalance } from '../entities/wallet-balance.entity';
 import { WalletService } from './wallet.service';
 import { Transaction } from '../entities/transaction.entity'; // Import Transaction entity
-import { WalletController } from './wallet.controller';
+import { WalletController, TransactionController } from './wallet.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { RedisModule } from '../redis/redis.module';
 import { UserModule } from '../user/user.module'; // Import the module containing UserService
-
+import { FxModule } from '../fx/fx-rate.module'; 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Wallet, WalletBalance, Transaction]),
@@ -18,9 +18,10 @@ import { UserModule } from '../user/user.module'; // Import the module containin
     }),
     RedisModule,
     forwardRef(() => UserModule), // Now importing the module that exports UserService
+    FxModule, // Import the FxModule for FX rate service
   ],
   providers: [WalletService],  // Add UserService here if not exported by UserModule
-  controllers: [WalletController],
+  controllers: [WalletController, TransactionController],
   exports: [WalletService],
 })
 export class WalletModule {}

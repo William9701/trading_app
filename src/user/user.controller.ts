@@ -36,7 +36,7 @@ export class UserController {
     type: RegisterDto,  // Ensuring Swagger uses DTO schema
   })
   async register(@Body() registerDto: RegisterDto) {
-    return this.userService.register(registerDto.email, registerDto.password);
+    return this.userService.register(registerDto.email, registerDto.password, registerDto.role);
   }
 
 

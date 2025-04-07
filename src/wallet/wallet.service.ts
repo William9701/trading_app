@@ -1,19 +1,202 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from '../entities/wallet.entity';
 import { WalletBalance } from '../entities/wallet-balance.entity';
 import { User } from '../entities/user.entity';
-import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
+import {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+} from '../entities/transaction.entity';
+import { logger } from 'src/utils/logger.util';
+import { FxRateService } from '../fx/fx-rate.service';
+import { ConvertCurrencyDto } from '../dto/convert-currency.dto';
 
 @Injectable()
 export class WalletService {
   constructor(
     @InjectRepository(Wallet) private walletRepo: Repository<Wallet>,
-    @InjectRepository(WalletBalance) private balanceRepo: Repository<WalletBalance>,
-    @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>
-
+    @InjectRepository(WalletBalance)
+    private balanceRepo: Repository<WalletBalance>,
+    @InjectRepository(Transaction)
+    private transactionRepo: Repository<Transaction>,
+    private fxRateService: FxRateService, // Injecting the FxRateService to get exchange rates
   ) {}
+
+  /**
+   * Handles the trade logic, including Naira-specific rules if necessary.
+   * @param userId The user's ID for the trade.
+   * @param dto Contains details of the trade (fromCurrency, toCurrency, amount).
+   * @returns The result of the trade.
+   */
+  async tradeCurrency(userId: string, dto: ConvertCurrencyDto) {
+    const { fromCurrency, toCurrency, amount } = dto;
+
+    const wallet = await this.walletRepo.findOne({
+      where: { user: { id: userId } },
+      relations: ['balances'],
+    });
+
+    if (!wallet) {
+      logger.error(`Wallet not found for user: ${userId}`);
+      throw new BadRequestException('Wallet not found');
+    }
+
+    const fromBalance = wallet.balances.find(
+      (b) => b.currency === fromCurrency,
+    );
+    const toBalance = wallet.balances.find((b) => b.currency === toCurrency);
+
+    if (!fromBalance || fromBalance.amount < amount) {
+      logger.warn(
+        `Insufficient balance: Needed ${amount}, Available ${fromBalance?.amount ?? 0}`,
+      );
+      throw new BadRequestException('Insufficient balance for trade');
+    }
+
+    // Get cached FX rate
+    const fxRate = await this.fxRateService.getRate(fromCurrency, toCurrency);
+    if (!fxRate) {
+      logger.error(`FX rate unavailable for ${fromCurrency} to ${toCurrency}`);
+      throw new BadRequestException('Unable to retrieve exchange rate');
+    }
+
+    let convertedAmount = Number((amount * fxRate).toFixed(2));
+
+    // Naira-specific trading logic (e.g., adjust FX rate or add commissions)
+    if (fromCurrency === 'NGN') {
+      // Example: Deduct a small trading fee if trading from Naira
+      const tradingFee = 0.02; // 2% fee
+      convertedAmount = convertedAmount * (1 - tradingFee);
+      logger.info(
+        `Applied 2% trading fee for NGN trade. New converted amount: ${convertedAmount}`,
+      );
+    }
+
+    // Update the fromBalance and toBalance
+    fromBalance.amount = Number((fromBalance.amount - amount).toFixed(2));
+
+    if (toBalance) {
+      const currentAmount =
+        typeof toBalance.amount === 'number'
+          ? toBalance.amount
+          : parseFloat(toBalance.amount); // Safely handle string
+
+      toBalance.amount = Number((currentAmount + convertedAmount).toFixed(2));
+      await this.balanceRepo.save(toBalance);
+    } else {
+      const newBalance = this.balanceRepo.create({
+        currency: toCurrency,
+        amount: convertedAmount,
+        wallet,
+      });
+      await this.balanceRepo.save(newBalance);
+    }
+
+    await this.balanceRepo.save(fromBalance);
+
+    // Log the transaction
+    const transaction = this.transactionRepo.create({
+      wallet,
+      currency: fromCurrency,
+      amount,
+      rate: fxRate,
+      type: TransactionType.TRADE,
+      status: TransactionStatus.SUCCESS,
+      reference: `TRADE-${Date.now()}`,
+      remarks: `Traded ${amount} ${fromCurrency} to ${convertedAmount} ${toCurrency} at rate ${fxRate}`,
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    return {
+      message: 'Trade successful',
+      from: { currency: fromCurrency, deducted: amount },
+      to: { currency: toCurrency, added: convertedAmount },
+      rate: fxRate,
+    };
+  }
+
+  /**
+   * Converts an amount from one currency to another using the FX rate service.
+   * @param convertCurrencyDto The DTO containing conversion details.
+   * @returns The converted amount.
+   */
+  async convertCurrency(userId: string, dto: ConvertCurrencyDto) {
+    const { fromCurrency, toCurrency, amount } = dto;
+
+    const wallet = await this.walletRepo.findOne({
+      where: { user: { id: userId } },
+      relations: ['balances'],
+    });
+
+    if (!wallet) {
+      logger.error(`Wallet not found for user: ${userId}`);
+      throw new BadRequestException('Wallet not found');
+    }
+
+    const fromBalance = wallet.balances.find(
+      (b) => b.currency === fromCurrency,
+    );
+    const toBalance = wallet.balances.find((b) => b.currency === toCurrency);
+
+    if (!fromBalance || fromBalance.amount < amount) {
+      logger.warn(
+        `Insufficient balance: Needed ${amount}, Available ${fromBalance?.amount ?? 0}`,
+      );
+      throw new BadRequestException('Insufficient balance for conversion');
+    }
+
+    const fxRate = await this.fxRateService.getRate(fromCurrency, toCurrency);
+    if (!fxRate) {
+      logger.error(`FX rate unavailable for ${fromCurrency} to ${toCurrency}`);
+      throw new BadRequestException('Unable to retrieve exchange rate');
+    }
+
+    const convertedAmount = Number((amount * fxRate).toFixed(2));
+
+    fromBalance.amount = Number((fromBalance.amount - amount).toFixed(2));
+
+    if (toBalance) {
+      const currentAmount =
+        typeof toBalance.amount === 'number'
+          ? toBalance.amount
+          : parseFloat(toBalance.amount); // Safely handle string
+
+      toBalance.amount = Number((currentAmount + convertedAmount).toFixed(2));
+      await this.balanceRepo.save(toBalance);
+    } else {
+      const newBalance = this.balanceRepo.create({
+        currency: toCurrency,
+        amount: convertedAmount,
+        wallet,
+      });
+      await this.balanceRepo.save(newBalance);
+    }
+
+    await this.balanceRepo.save(fromBalance);
+
+    const transaction = this.transactionRepo.create({
+      wallet,
+      currency: fromCurrency,
+      amount,
+      rate: fxRate,
+      type: TransactionType.CONVERSION,
+      status: TransactionStatus.SUCCESS,
+      reference: `CONVERT-${Date.now()}`,
+      remarks: `Converted ${amount} ${fromCurrency} to ${convertedAmount} ${toCurrency} at rate ${fxRate}`,
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    return {
+      message: 'Conversion successful',
+      from: { currency: fromCurrency, deducted: amount },
+      to: { currency: toCurrency, added: convertedAmount },
+      rate: fxRate,
+    };
+  }
 
   /**
    * Creates a wallet for the user with a base currency (NGN) and initial balances in USD, EUR, NGN.
@@ -39,7 +222,10 @@ export class WalletService {
    * @param currency The currency type for the new wallet (e.g., USD, EUR).
    * @returns The created or updated wallet with the specified currency.
    */
-  async createWalletInCurrency(userId: string, currency: string): Promise<WalletBalance> {
+  async createWalletInCurrency(
+    userId: string,
+    currency: string,
+  ): Promise<WalletBalance> {
     // Fetch the user's wallet
     const wallet = await this.walletRepo.findOne({
       where: { user: { id: userId } },
@@ -51,7 +237,9 @@ export class WalletService {
     }
 
     // Check if the wallet already has the requested currency
-    const existingBalance = wallet.balances.find(b => b.currency === currency);
+    const existingBalance = wallet.balances.find(
+      (b) => b.currency === currency,
+    );
     if (existingBalance) {
       throw new Error(`Wallet already exists in ${currency}`);
     }
@@ -73,59 +261,97 @@ export class WalletService {
    * @returns The updated wallet balance.
    */
   async fundWallet(userId: string, currency: string, amount: number) {
+    // Step 1: Validate the currency by checking if we have exchange rates for it
+    try {
+      await this.fxRateService.getRates(currency); // This will fetch rates or throw an error if currency is not supported
+    } catch (error) {
+      throw new Error(`Invalid or unsupported currency: ${currency}`);
+    }
+
+    // Step 2: Validate the amount
+    if (amount <= 0) {
+      throw new Error('Amount must be greater than zero');
+    }
     const wallet = await this.walletRepo.findOne({
       where: { user: { id: userId } },
       relations: ['balances'],
     });
-  
+
     if (!wallet) throw new Error('Wallet not found');
-  
-    let balance = wallet.balances.find(b => b.currency === currency);
-  
+
+    let balance = wallet.balances.find((b) => b.currency === currency);
+
     if (!balance) {
       const newBalance = this.balanceRepo.create({ currency, amount, wallet });
       return this.balanceRepo.save(newBalance);
     }
-  
+
     // Convert to numbers if stored as strings
-    const currentAmount = typeof balance.amount === 'string' ? parseFloat(balance.amount) : balance.amount;
-  
+    const currentAmount =
+      typeof balance.amount === 'string'
+        ? parseFloat(balance.amount)
+        : balance.amount;
+
     // Add properly and fix to 2 decimal places if needed
     balance.amount = Number((currentAmount + amount).toFixed(2));
 
     const transaction = this.transactionRepo.create({
-        wallet,
-        currency,
-        amount,
-        rate: null, // Not needed for funding
-        type: TransactionType.FUNDING,
-        status: TransactionStatus.SUCCESS,
-        reference: `FUND-${Date.now()}`, // Optional unique ID
-        remarks: `Funded ${amount} ${currency}`,
-      });
-      await this.transactionRepo.save(transaction);
-      
-  
+      wallet,
+      currency,
+      amount,
+      rate: null, // Not needed for funding
+      type: TransactionType.FUNDING,
+      status: TransactionStatus.SUCCESS,
+      reference: `FUND-${Date.now()}`, // Optional unique ID
+      remarks: `Funded ${amount} ${currency}`,
+    });
+    await this.transactionRepo.save(transaction);
+
     return this.balanceRepo.save(balance);
   }
-  
 
-    /**
-     * Fetches the user's wallet by user ID.
-     * @param userId The user's ID to fetch the wallet.
-     * @returns The user's wallet with balances.
-     */
-    async getUserWallet(userId: string): Promise<Wallet> {
-        const wallet = await this.walletRepo.findOne({
-        where: { user: { id: userId } },
-        relations: ['balances'],
-        });
-    
-        if (!wallet) {
-        throw new Error('Wallet not found');
-        }
-    
-        return wallet;
+  /**
+   * Fetches the user's wallet by user ID.
+   * @param userId The user's ID to fetch the wallet.
+   * @returns The user's wallet with balances.
+   */
+  async getUserWallet(userId: string): Promise<Wallet> {
+    const wallet = await this.walletRepo.findOne({
+      where: { user: { id: userId } },
+      relations: ['balances'],
+    });
+
+    if (!wallet) {
+      throw new Error('Wallet not found');
     }
-  
+
+    return wallet;
+  }
+
+  /**
+   * Get all transactions associated with a userId, ordered by timestamp (latest first)
+   * @param userId The ID of the user whose transactions we want to fetch
+   */
+  async getUserTransactions(userId: string) {
+    try {
+      // Step 1: Fetch the wallet ID associated with the userId
+      const wallet = await this.walletRepo.findOne({
+        where: { user: { id: userId } }, // Assuming wallet has a relation to user
+      });
+
+      if (!wallet) {
+        throw new Error('Wallet not found for this user');
+      }
+
+      // Step 2: Fetch transactions for the wallet, ordered by timestamp (latest first)
+      const transactions = await this.transactionRepo.find({
+        where: { wallet: { id: wallet.id } },
+        order: { timestamp: 'DESC' }, // Assuming the `Transaction` entity has a `timestamp` field
+      });
+
+      return transactions;
+    } catch (error) {
+      throw new Error(`Failed to retrieve transactions: ${error.message}`);
+    }
+  }
 }

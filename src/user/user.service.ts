@@ -25,6 +25,7 @@ import { randomInt } from 'crypto'; // Import randomInt for OTP generation
 
 import { UserSessionRepository } from '../session/userSession.repository';
 import { WalletService } from '../wallet/wallet.service'; // Import WalletService
+import { UserRole } from './user-role.enum';
 
 @Injectable()
 export class UserService {
@@ -42,6 +43,7 @@ export class UserService {
   async register(
     email: string,
     password: string,
+    role: UserRole,
   ): Promise<{ message: string }> {
     logger.info(`Register request received for ${email}`);
     this.validateInput(email, password);
@@ -60,6 +62,7 @@ export class UserService {
     otpExpiration.setMinutes(otpExpiration.getMinutes() + 10); // OTP expires in 10 minutes
 
     const user = this.userRepository.create({
+      role,
       email,
       password: await this.hashPassword(password),
       verifyToken: otp, // Store OTP in VerifyToken field
@@ -192,7 +195,11 @@ export class UserService {
 
   async logout(sessionId: string, res: Response) {
     await this.userSessionRepository.delete({ sessionId });
-    res.clearCookie('session_id');
+    res.clearCookie('session_id', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
     return res.json({ message: 'Logged out successfully' });
   }
 
