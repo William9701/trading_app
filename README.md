@@ -46,6 +46,7 @@ You're tasked with building the backend for an **FX Trading App**. The applicati
 - **Email Provider**: Nodemiller for sending emails
 - **Cache**: CACHE_MANAGER for storing FX rates temporarily
 - **API Documentation**: Swagger
+- **Logger**: Winston
 - **External FX Rate API**: [Exchangerate API](https://www.exchangerate-api.com)
 
 ---
