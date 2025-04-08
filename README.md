@@ -73,6 +73,56 @@ You're tasked with building the backend for an **FX Trading App**. The applicati
 
 ---
 
+---
+
+## Setup Instructions
+
+Follow the steps below to set up and run the application locally:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/william-9701/credpal-fx-trading-app.git
+   cd credpal-fx-trading-app
+   ```
+
+2. **Create the `.env` file** in the root directory with the following contents:
+
+   ```env
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASS=root
+   DB_NAME=cred_pal
+
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your_email
+   SMTP_PASS=your_smtp_password
+   SMTP_SENDER=your_email
+
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Run migrations** to set up the database schema:
+   ```bash
+   npm run migration:run
+   ```
+
+5. **Start the application**:
+   ```bash
+   npm run start:dev
+   ```
+
+   The application will be running on `http://localhost:3005`.
+
+---
+
 ## API Endpoints
 
 Here are the key API routes that power the FX Trading App, with examples using `curl`:
@@ -82,7 +132,7 @@ Here are the key API routes that power the FX Trading App, with examples using `
 ```bash
 curl -X POST http://localhost:3005/auth/register \
 -H "Content-Type: application/json" \
--d '{"email": "obi_william@yahoo.com", "password": "Password123!", "role": "admin"}'
+-d '{"email": "obi_william@yahoo.com", "password": "Password123!", "role": "user"}'
 ```
 
 **Expected Outcome:**
@@ -458,55 +508,7 @@ curl -X GET -b cookies.txt http://localhost:3005/auth/logout
 }
 ```
 
----
 
-## Setup Instructions
-
-Follow the steps below to set up and run the application locally:
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-repo/credpal-fx-trading-app.git
-   cd credpal-fx-trading-app
-   ```
-
-2. **Create the `.env` file** in the root directory with the following contents:
-
-   ```env
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASS=root
-   DB_NAME=cred_pal
-
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your_email
-   SMTP_PASS=your_smtp_password
-   SMTP_SENDER=your_email
-
-   REDIS_HOST=localhost
-   REDIS_PORT=6379
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-4. **Run migrations** to set up the database schema:
-   ```bash
-   npm run migration:run
-   ```
-
-5. **Start the application**:
-   ```bash
-   npm run start:dev
-   ```
-
-   The application will be running on `http://localhost:3005`.
-
----
 
 ## Demo
 
@@ -539,5 +541,3 @@ For a detailed view of all available endpoints and their parameters, visit the S
 MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
-
-This README now includes all relevant sections, including the route `curl` commands and expected outcomes for easy testing. The Swagger link has also been provided for easy visualization of the API.
