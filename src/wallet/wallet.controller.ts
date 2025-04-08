@@ -124,10 +124,10 @@ import {
       const currentUser = req.user;
       const reference = uuidv4();
   
-      if (currentUser.role !== UserRole.ADMIN) {
-        logger.error(`Unauthorized trade attempt by user ID: ${currentUser.id}`);
-        throw new UnauthorizedException('You are not authorized to perform this trade');
-      }
+    //   if (currentUser.role !== UserRole.ADMIN) {
+    //     logger.error(`Unauthorized trade attempt by user ID: ${currentUser.id}`);
+    //     throw new UnauthorizedException('You are not authorized to perform this trade');
+    //   }
   
       try {
         const result = await this.walletService.tradeCurrency(currentUser.id, tradeDto, reference);
