@@ -63,7 +63,7 @@ You're tasked with building the backend for an **FX Trading App**. The applicati
 
 3. **FX Rate Integration**:
    - Fetch real-time FX rates from an external API.
-   - Store the rates temporarily in Redis for better performance.
+   - Store the rates temporarily in CACHE_MANAGER for better performance.
 
 4. **Currency Conversion & Trading**:
    - Convert or trade between NGN and other currencies using real-time FX rates.
