@@ -34,13 +34,17 @@ async function bootstrap() {
 
   // Swagger Configuration
   const config = new DocumentBuilder()
-    .setTitle('User Authentication API')
-    .setDescription(
-      'API for user authentication including registration, login, and profile management',
-    )
-    .setVersion('1.0')
-    .addBearerAuth() // Enables JWT Bearer Authentication in Swagger UI
-    .build();
+  .setTitle('FX Wallet API')
+  .setDescription('API for wallet and currency trading')
+  .setVersion('1.0')
+  .addSecurity('cookieAuth', {
+    type: 'apiKey',
+    in: 'cookie',
+    name: 'session_id', // exact name of cookie
+  })
+  .addBearerAuth() // Enables JWT Bearer Authentication in Swagger UI
+  
+  .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document); // API docs available at /api-docs

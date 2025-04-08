@@ -40,23 +40,41 @@ export class VerifyDto {
   }
 
 
-export class UpdateUserDto {
+  export class UpdateUserDto {
+    @ApiProperty({ example: 'John', description: 'First name of the user', required: false })
     @IsOptional()
+    @IsString()
     first_name?: string;
   
+    @ApiProperty({ example: 'Doe', description: 'Last name of the user', required: false })
     @IsOptional()
+    @IsString()
     last_name?: string;
   
+    @ApiProperty({ example: true, description: 'Set whether the user is active', required: false })
     @IsOptional()
     @IsBoolean()
     is_active?: boolean;
-}
+  }
+  
 
-export class UserResponseDto {
+  export class UserResponseDto {
+    @ApiProperty({ example: 'b1d7a14e-4c84-4c44-9a2e-13ad43e62a1e', description: 'Unique identifier of the user' })
     id: string;
+  
+    @ApiProperty({ example: 'user@example.com', description: 'Email address of the user' })
     email: string;
+  
+    @ApiProperty({ example: 'John', description: 'First name of the user', required: false })
     first_name?: string;
+  
+    @ApiProperty({ example: 'Doe', description: 'Last name of the user', required: false })
     last_name?: string;
+  
+    @ApiProperty({ example: true, description: 'Whether the user has verified their email' })
     is_verified: boolean;
+  
+    @ApiProperty({ example: true, description: 'Whether the user account is active' })
     is_active: boolean;
   }
+  

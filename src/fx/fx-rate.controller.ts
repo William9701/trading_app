@@ -8,6 +8,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { logger } from 'src/utils/logger.util';
 
 @Controller('fx')
 export class FxRateController {
@@ -20,6 +21,7 @@ export class FxRateController {
   @ApiResponse({ status: 200, description: 'Rates retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Rates not found' })
   async getRates(@Query('base') base: string = 'NGN') {
+    logger.info(`Fetching rates for base currency: ${base}`);
     return this.fxRateService.getRates(base);
   }
 }

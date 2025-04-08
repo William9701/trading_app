@@ -23,10 +23,10 @@ import { FxModule } from './fx/fx-rate.module';
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST,
-      port: +process.env.DB_PORT! || 3306,
-      username: process.env.DB_USER || 'root',
-      password: process.env.DB_PASS || 'root', 
-      database: process.env.DB_NAME || 'cred_pal',
+      port: +process.env.DB_PORT! ,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS, 
+      database: process.env.DB_NAME,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV !== 'production',  // Set to false in production
     }),

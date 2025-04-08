@@ -12,6 +12,7 @@ import {
 import { logger } from 'src/utils/logger.util';
 import { FxRateService } from '../fx/fx-rate.service';
 import { ConvertCurrencyDto } from '../dto/convert-currency.dto';
+import { checkDuplicateTransaction } from '../utils/idempotency.util'; // Import the utility function
 
 @Injectable()
 export class WalletService {
@@ -30,7 +31,13 @@ export class WalletService {
    * @param dto Contains details of the trade (fromCurrency, toCurrency, amount).
    * @returns The result of the trade.
    */
-  async tradeCurrency(userId: string, dto: ConvertCurrencyDto) {
+  async tradeCurrency(userId: string, dto: ConvertCurrencyDto, reference: string) {
+    // Step 1: Check for duplicate transaction
+    const duplicate = await checkDuplicateTransaction(this.transactionRepo, reference);
+    if (duplicate) {
+      logger.warn(`Duplicate conversion transaction with reference ${reference}`);
+      return { message: 'Transaction already processed', transaction: duplicate };
+    }
     const { fromCurrency, toCurrency, amount } = dto;
 
     const wallet = await this.walletRepo.findOne({
@@ -104,7 +111,7 @@ export class WalletService {
       rate: fxRate,
       type: TransactionType.TRADE,
       status: TransactionStatus.SUCCESS,
-      reference: `TRADE-${Date.now()}`,
+      reference,
       remarks: `Traded ${amount} ${fromCurrency} to ${convertedAmount} ${toCurrency} at rate ${fxRate}`,
     });
 
@@ -123,7 +130,12 @@ export class WalletService {
    * @param convertCurrencyDto The DTO containing conversion details.
    * @returns The converted amount.
    */
-  async convertCurrency(userId: string, dto: ConvertCurrencyDto) {
+  async convertCurrency(userId: string, dto: ConvertCurrencyDto, reference: string) {
+    const duplicate = await checkDuplicateTransaction(this.transactionRepo, reference);
+    if (duplicate) {
+      logger.warn(`Duplicate conversion transaction with reference ${reference}`);
+      return { message: 'Transaction already processed', transaction: duplicate };
+    }
     const { fromCurrency, toCurrency, amount } = dto;
 
     const wallet = await this.walletRepo.findOne({
@@ -184,7 +196,7 @@ export class WalletService {
       rate: fxRate,
       type: TransactionType.CONVERSION,
       status: TransactionStatus.SUCCESS,
-      reference: `CONVERT-${Date.now()}`,
+      reference,
       remarks: `Converted ${amount} ${fromCurrency} to ${convertedAmount} ${toCurrency} at rate ${fxRate}`,
     });
 
@@ -260,54 +272,64 @@ export class WalletService {
    * @param amount The amount to be added to the wallet.
    * @returns The updated wallet balance.
    */
-  async fundWallet(userId: string, currency: string, amount: number) {
-    // Step 1: Validate the currency by checking if we have exchange rates for it
+  async fundWallet(
+    userId: string,
+    currency: string,
+    amount: number,
+    reference: string,
+  ) {
+    // Step 1: Check for duplicate transaction
+    const existing = await this.transactionRepo.findOne({
+      where: { reference },
+    });
+    if (existing) {
+      logger.warn(
+        `Duplicate fund transaction attempt with reference ${reference}`,
+      );
+      return {
+        message: 'Transaction already processed',
+        transaction: existing,
+      };
+    }
+
+    // Step 2: Validate currency and amount
     try {
-      await this.fxRateService.getRates(currency); // This will fetch rates or throw an error if currency is not supported
+      await this.fxRateService.getRates(currency);
     } catch (error) {
       throw new Error(`Invalid or unsupported currency: ${currency}`);
     }
 
-    // Step 2: Validate the amount
-    if (amount <= 0) {
-      throw new Error('Amount must be greater than zero');
-    }
+    if (amount <= 0) throw new Error('Amount must be greater than zero');
+
     const wallet = await this.walletRepo.findOne({
       where: { user: { id: userId } },
       relations: ['balances'],
     });
-
     if (!wallet) throw new Error('Wallet not found');
 
     let balance = wallet.balances.find((b) => b.currency === currency);
-
     if (!balance) {
-      const newBalance = this.balanceRepo.create({ currency, amount, wallet });
-      return this.balanceRepo.save(newBalance);
+      balance = this.balanceRepo.create({ currency, amount, wallet });
+    } else {
+      balance.amount = Number(
+        (parseFloat(balance.amount.toString()) + amount).toFixed(2),
+      );
     }
-
-    // Convert to numbers if stored as strings
-    const currentAmount =
-      typeof balance.amount === 'string'
-        ? parseFloat(balance.amount)
-        : balance.amount;
-
-    // Add properly and fix to 2 decimal places if needed
-    balance.amount = Number((currentAmount + amount).toFixed(2));
+    await this.balanceRepo.save(balance);
 
     const transaction = this.transactionRepo.create({
       wallet,
       currency,
       amount,
-      rate: null, // Not needed for funding
+      rate: null,
       type: TransactionType.FUNDING,
       status: TransactionStatus.SUCCESS,
-      reference: `FUND-${Date.now()}`, // Optional unique ID
+      reference,
       remarks: `Funded ${amount} ${currency}`,
     });
     await this.transactionRepo.save(transaction);
 
-    return this.balanceRepo.save(balance);
+    return { message: 'Wallet funded successfully', transaction };
   }
 
   /**

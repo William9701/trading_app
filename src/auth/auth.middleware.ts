@@ -1,6 +1,5 @@
 import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { RedisService } from '../redis/redis.service';  // Assuming RedisService is in src/redis
 import { logger } from '../utils/logger.util'; // Import logger
 import { UserSession } from 'src/entities/session.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +9,7 @@ import { User } from '../entities/user.entity';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  constructor(@InjectRepository(User) private readonly userRepository: Repository<User>, private readonly redisService: RedisService,
+  constructor(@InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly userSessionRepository: UserSessionRepository,
   ) {}
 
@@ -22,7 +21,7 @@ export class AuthMiddleware implements NestMiddleware {
       throw new UnauthorizedException('login to access this route');
     }
 
-    // Retrieve token from Redis
+    
     const sessionData = await this.userSessionRepository.findOne({ where: { sessionId } });
     if (!sessionData) {
       throw new UnauthorizedException('Invalid session, pls login to access this route');

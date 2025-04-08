@@ -8,12 +8,12 @@ export class EmailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: +process.env.SMTP_PORT! || 587,
+      host: process.env.SMTP_HOST ,
+      port: +process.env.SMTP_PORT! ,
       secure: false, // Use TLS
       auth: {
-        user: process.env.SMTP_USER || 'williamobi818@gmail.com',
-        pass: process.env.SMTP_PASS || 'lkpc vwrq phxs knlf',
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
   }

@@ -6,7 +6,6 @@ import { RedisService } from '../redis/redis.service';
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly redisService: RedisService, // Inject Redis Service
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
