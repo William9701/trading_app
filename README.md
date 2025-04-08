@@ -512,7 +512,7 @@ curl -X GET -b cookies.txt http://localhost:3005/auth/logout
 
 ## Demo
 
-A video demonstration of the app will be added soon. Stay tuned for a walkthrough of the application!
+[PROJECT DEMO](https://www.dropbox.com/scl/fi/jg5npcpjmb5i2fnk5q9n8/0408.mp4?rlkey=4otpyggyf7r816g2w7ozo4xnm&st=xrgpygxv&dl=0)
 
 ---
 
@@ -532,7 +532,7 @@ npm run test
 
 For a detailed view of all available endpoints and their parameters, visit the Swagger UI at:
 
-[Swagger Documentation](http://localhost:3005/api)
+<video controls src="https://www.dropbox.com/scl/fi/jg5npcpjmb5i2fnk5q9n8/0408.mp4?rlkey=4otpyggyf7r816g2w7ozo4xnm&st=xrgpygxv&dl=0" title="[Swagger Documentation]"></video>(http://localhost:3005/api-docs)
 
 ---
 
