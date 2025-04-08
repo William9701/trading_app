@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
-import { logger } from 'src/utils/logger.util';
+import { logger } from '../utils/logger.util';
 @Injectable()
 export class FxRateService {
   private readonly BASE_URL = 'https://open.er-api.com/v6/latest';

@@ -8,7 +8,7 @@ import { UserService } from '../user/user.service';
 import { UserRole } from '../user/user-role.enum';
 import { ConvertCurrencyDto } from '../dto/convert-currency.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from 'src/utils/logger.util';
+import { logger } from '../utils/logger.util';
 
 @ApiTags('WalletService')
 @Controller('wallet/')

@@ -47,8 +47,8 @@ export class UserController {
   @ApiBody({
     type: VerifyDto,  // Ensuring Swagger uses DTO schema
   })
-  async verify(@Body() verifyDto: VerifyDto) {
-    return this.userService.verifyOtp(verifyDto.email, verifyDto.otp);
+  async verify(@Body() verifyDto: VerifyDto, @Res() res: Response) {
+    return this.userService.verifyOtp(verifyDto.email, verifyDto.otp, res);
   }
 
   @Post('login')

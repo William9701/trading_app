@@ -1,4 +1,3 @@
-// src/user/user.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity'; // ✅ Import the User entity
@@ -12,8 +11,8 @@ import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../mail/mail.service';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
-import { UserSessionModule } from 'src/session/Usersession.module'; 
-import { WalletModule } from 'src/wallet/wallet.module';
+import { UserSessionModule } from '../session/Usersession.module'; 
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
   imports: [

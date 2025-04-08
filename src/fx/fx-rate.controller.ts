@@ -8,7 +8,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { logger } from 'src/utils/logger.util';
+import { logger } from '../utils/logger.util';
 
 @Controller('fx')
 export class FxRateController {

@@ -7,8 +7,8 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import Redis from 'ioredis';
-import { RedisService } from 'src/redis/redis.service';
-import { RedisModule } from 'src/redis/redis.module';
+import { RedisService } from '../redis/redis.service';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [

@@ -9,7 +9,7 @@ import {
   TransactionType,
   TransactionStatus,
 } from '../entities/transaction.entity';
-import { logger } from 'src/utils/logger.util';
+import { logger } from '../utils/logger.util';
 import { FxRateService } from '../fx/fx-rate.service';
 import { ConvertCurrencyDto } from '../dto/convert-currency.dto';
 import { checkDuplicateTransaction } from '../utils/idempotency.util'; // Import the utility function

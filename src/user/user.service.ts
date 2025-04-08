@@ -203,7 +203,7 @@ export class UserService {
     return res.json({ message: 'Logged out successfully' });
   }
 
-  async verifyOtp(email: string, otp: string) {
+  async verifyOtp(email: string, otp: string, res: Response) {
     logger.info(`OTP verification request for ${email}`);
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
@@ -221,6 +221,6 @@ export class UserService {
     // this.monitoringService.increaseOtpVerificationCount(); // Increment OTP verification metric
     this.sendWelcomeEmail(email); // Send welcome email after successful OTP verification
     logger.info(`Welcome email sent to ${email}`);
-    // return res.json({ message: 'User verified successfully' });
+    return res.json({ message: 'User verified successfully' });
   }
 }

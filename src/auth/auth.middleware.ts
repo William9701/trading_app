@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger.util'; // Import logger
-import { UserSession } from 'src/entities/session.entity';
+import { UserSession } from '../entities/session.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserSessionRepository } from '../session/userSession.repository';
