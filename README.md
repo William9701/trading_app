@@ -105,17 +105,24 @@ Follow the steps below to set up and run the application locally:
    REDIS_PORT=6379
    ```
 
-3. **Install dependencies**:
+3. **Create the Schema for MYSQL Database** 
+
+   ```bash
+   cat config.sql | mysql -u root -p
+
+   ```
+
+4. **Install dependencies**:
    ```bash
    npm install
    ```
 
-4. **Run migrations** to set up the database schema:
+5. **Run migrations** to set up the database schema:
    ```bash
    npm run migration:run
    ```
 
-5. **Start the application**:
+6. **Start the application**:
    ```bash
    npm run start:dev
    ```
