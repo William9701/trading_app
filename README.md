@@ -92,7 +92,7 @@ Follow the steps below to set up and run the application locally:
    DB_HOST=localhost
    DB_PORT=3306
    DB_USER=root
-   DB_PASS=root
+   DB_PASS=your_root_password
    DB_NAME=cred_pal
 
    SMTP_HOST=smtp.gmail.com
