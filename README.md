@@ -44,6 +44,7 @@ You're tasked with building the backend for an **FX Trading App**. The applicati
 - **ORM**: TypeORM
 - **Database**: MySQL
 - **Email Provider**: Nodemiller for sending emails
+- **Authentication**: JWT for api Authentication
 - **Cache**: CACHE_MANAGER for storing FX rates temporarily
 - **API Documentation**: Swagger
 - **Logger**: Winston
