@@ -82,8 +82,8 @@ Follow the steps below to set up and run the application locally:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/william-9701/credpal-fx-trading-app.git
-   cd credpal-fx-trading-app
+   git clone https://github.com/William9701/trading_app.git
+   cd trading_app
    ```
 
 2. **Create the `.env` file** in the root directory with the following contents:
