@@ -291,22 +291,30 @@ export class WalletService {
         transaction: existing,
       };
     }
-
+  
     // Step 2: Validate currency and amount
     try {
       await this.fxRateService.getRates(currency);
     } catch (error) {
       throw new Error(`Invalid or unsupported currency: ${currency}`);
     }
-
+  
     if (amount <= 0) throw new Error('Amount must be greater than zero');
-
+  
     const wallet = await this.walletRepo.findOne({
       where: { user: { id: userId } },
       relations: ['balances'],
     });
     if (!wallet) throw new Error('Wallet not found');
-
+  
+    // Step 3: Check if it's a new wallet (no balances or all balances = 0)
+    const isNewWallet = !wallet.balances.length || wallet.balances.every(b => parseFloat(b.amount.toString()) === 0);
+  
+    if (isNewWallet && currency !== 'NGN') {
+      throw new Error('This is a new account. Initial funding must be in NGN.');
+    }
+  
+    // Step 4: Fund wallet
     let balance = wallet.balances.find((b) => b.currency === currency);
     if (!balance) {
       balance = this.balanceRepo.create({ currency, amount, wallet });
@@ -316,7 +324,7 @@ export class WalletService {
       );
     }
     await this.balanceRepo.save(balance);
-
+  
     const transaction = this.transactionRepo.create({
       wallet,
       currency,
@@ -328,9 +336,10 @@ export class WalletService {
       remarks: `Funded ${amount} ${currency}`,
     });
     await this.transactionRepo.save(transaction);
-
+  
     return { message: 'Wallet funded successfully', transaction };
   }
+  
 
   /**
    * Fetches the user's wallet by user ID.
